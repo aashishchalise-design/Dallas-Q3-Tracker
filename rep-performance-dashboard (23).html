@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rep Performance Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D0B09; --panel:#171310; --panel-2:#1F1A15; --border:#2C2620;
+    --text:#F5F1E8; --text-dim:#9C9488; --text-faint:#635B4E;
+    --gold:#D9A441; --gold-bg:#2E2311;
+    --green:#8FD14F; --green-bg:#1D2712;
+    --red:#DC5B4E; --red-bg:#2B1512;
+    --blue:#6FA8E8; --blue-bg:#131E30;
+    --silver:#C7C7C7; --bronze:#C97B4A; --bronze-bg:#2E1D10; --radius:14px;
+    --premier:#C77DFF; --premier-bg:#241A33;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:32px 24px 64px;min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+  h1{font-family:'Anton',sans-serif;font-weight:400;font-size:42px;letter-spacing:0.5px;margin:0 0 6px;text-transform:uppercase;color:var(--text);}
+  .sub{color:var(--text-dim);font-size:13px;margin:0;}
+  .status-pill{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:10px 18px;}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+  .status-text .l1{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;font-weight:600;}
+  .status-text .l2{font-size:13px;color:var(--text);font-weight:700;}
+  .btns{display:flex;gap:8px;}
+  button{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;transition:transform .1s,border-color .15s,background .15s;}
+  button:hover{border-color:var(--text-faint);background:var(--panel-2);}
+  button:active{transform:scale(0.97);}
+  button.primary{background:var(--gold);border-color:var(--gold);color:#241C0C;}
+  button.primary:hover{background:#E6B85C;}
+  .icon-btn{width:42px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;color:var(--text);}
+  .icon-btn:hover{color:var(--gold);border-color:var(--gold);}
+  .icon-btn.spinning svg{animation:spin 0.9s linear infinite;}
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .tab{font-family:'Anton',sans-serif;font-size:15px;letter-spacing:0.5px;text-transform:uppercase;padding:10px 20px;color:var(--text-dim);cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;}
+  .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px 20px;}
+  .stat .lbl{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;}
+  .stat .val{font-family:'Anton',sans-serif;font-size:38px;font-weight:400;color:var(--text);line-height:1;}
+  .controls{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  input[type=text],select{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;}
+  select{cursor:pointer;}
+  .viewtoggle{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:3px;}
+  .viewtoggle span{padding:5px 12px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--text-dim);}
+  .viewtoggle span.active{background:var(--panel);color:var(--text);}
+  .empty{text-align:center;padding:60px 20px;background:var(--panel);border:1px dashed var(--border);border-radius:var(--radius);color:var(--text-dim);}
+  .empty button{margin-top:14px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:var(--radius);padding:16px 18px;transition:border-color .12s;}
+  .card:hover{border-color:var(--text-faint);}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .name{font-family:'Inter',sans-serif;font-size:17px;font-weight:700;letter-spacing:0.1px;}
+  .badge{font-size:13px;font-weight:800;padding:6px 14px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;}
+  .b-gold{background:var(--gold-bg);color:var(--gold);}
+  .b-premier{background:var(--premier-bg);color:var(--premier);}
+  .b-silver{background:var(--panel-2);color:var(--silver);}
+  .b-blue{background:var(--blue-bg);color:var(--blue);}
+  .b-red{background:var(--red-bg);color:var(--red);}
+  .b-neutral{background:var(--panel-2);color:var(--text-dim);}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-bottom:12px;font-size:12px;}
+  .detail{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:5px 0;}
+  .detail .k{color:var(--text-dim);}
+  .detail .v{font-family:'JetBrains Mono',monospace;font-weight:500;}
+  .ladder{margin-top:10px;}
+  .ladder-row{display:flex;gap:6px;margin-bottom:6px;}
+  .chip{flex:1;font-size:11px;padding:6px 8px;border-radius:6px;text-align:center;font-family:'JetBrains Mono',monospace;}
+  .chip-done{background:var(--green-bg);color:var(--green);font-weight:800;}
+  .chip-pending{background:var(--gold-bg);color:var(--gold);}
+  .chip-na{background:var(--panel-2);color:var(--text-faint);}
+  .chip-label{font-size:9px;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-faint);margin-bottom:4px;text-align:center;}
+  .ratios{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .ratio{background:var(--panel-2);border-radius:6px;padding:6px 10px;font-size:11px;}
+  .ratio .rk{color:var(--text-dim);margin-right:6px;}
+  .ratio .rv{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{color:var(--text-dim);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:0.4px;}
+  td{font-family:'JetBrains Mono',monospace;}
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;width:100%;max-width:640px;}
+  .modal h3{font-family:'Inter',sans-serif;font-weight:700;margin:0 0 6px;text-transform:uppercase;font-size:16px;letter-spacing:0.3px;}
+  .modal p{color:var(--text-dim);font-size:12px;margin:0 0 14px;}
+  textarea{width:100%;min-height:180px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical;}
+  .modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+  .hidden{display:none;}
+  .errmsg{color:var(--red);font-size:12px;margin-top:8px;}
+  .banner{font-size:12px;padding:10px 14px;border-radius:8px;margin-bottom:16px;}
+  .banner-warn{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold);}
+  .banner-ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green);}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:16px;}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .kpi-label{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:18px;letter-spacing:0.5px;color:var(--gold);margin-bottom:10px;}
+  .kpi-nums{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
+  .kpi-actual{font-family:'Anton',sans-serif;font-size:32px;font-weight:400;}
+  .kpi-target{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text-dim);}
+  .pbar{height:6px;border-radius:4px;background:var(--panel-2);overflow:hidden;margin-bottom:10px;}
+  .pbar-fill{height:100%;background:var(--gold);}
+  .kpi-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);}
+  .kpi-meta b{color:var(--text);font-family:'JetBrains Mono',monospace;}
+  .small-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+  .small-kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+  .small-kpi .lbl{font-size:11px;color:var(--text-dim);margin-bottom:4px;}
+  .small-kpi .val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M22,6 L54,6 L54,22 L68,22 L68,8 L92,8 L92,34 L82,34 L82,44 L74,52 L76,62 L68,66 L66,78 L58,92 L48,88 L44,80 L36,80 L30,72 L32,64 L22,58 L14,58 L10,46 L18,38 L18,28 L22,28 Z" fill="var(--gold)"/>
+      </svg>
+      <div>
+        <h1>Rep Performance Board</h1>
+        <p class="sub">SRA/CAP/IC production by rep · Team Board</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <div class="status-text">
+          <div class="l1">Data status</div>
+          <div class="l2" id="lastUpdated">Loading...</div>
+        </div>
+      </div>
+      <div class="btns">
+        <button id="refreshBtn" class="icon-btn" title="Refresh from sheet" aria-label="Refresh from sheet">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="tab1">Reps</div>
+    <div class="tab" data-tab="tab2">Team overview</div>
+  </div>
+
+  <div id="fetchBanner"></div>
+  <div id="statsRow" class="stats hidden"></div>
+  <div id="controlsRow" class="controls hidden">
+    <input type="text" id="search" placeholder="Search rep name...">
+    <select id="sortBy"></select>
+    <div class="viewtoggle">
+      <span data-view="cards" class="active">Cards</span>
+      <span data-view="table">Table</span>
+    </div>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="modalTitle">Paste data</h3>
+    <p>Paste rows copied from Google Sheets (include the header row), or paste raw CSV text.</p>
+    <textarea id="pasteArea" placeholder="Rep Name&#9;QTR Status&#9;..."></textarea>
+    <div id="modalErr" class="errmsg hidden"></div>
+    <div class="modal-btns">
+      <button id="cancelBtn">Cancel</button>
+      <button id="saveBtn" class="primary">Save data</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SEED_TAB1 = {"headers": ["Employee ID", "Rep Name", "QTR Status", "Counts Towards Club+%", "Equity Points", "Days Since Last SRA", "SRA QTR", "CAP QTR", "IC QTR", "PTO", "PAI Status", "Pacing to make $$$ for the year based on this quarter's numbers only", "SRA needed to hit Level 1", "CAP needed to hit Club", "IC needed to hit Level 1", "SRA to hit Level 2", "CAP to hit core", "IC to hit Level 2", "SRA to hit premier", "CAP to hit high premier", "IC to hit premier", "AC/CS ratio", "SRA/CAP", "CAP/IC", "SRA/IC"], "rows": [{"Employee ID": "", "Rep Name": "Tyler Lange", "QTR Status": "Level 3", "Counts Towards Club+%": "Y", "Equity Points": "11.25", "Days Since Last SRA": "5", "SRA QTR": "16", "CAP QTR": "11.5", "IC QTR": "7.5", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "8.0", "CAP to hit core": "3.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "9.0", "IC to hit premier": "7.0", "AC/CS ratio": "-  .0", "SRA/CAP": "72%", "CAP/IC": "65%", "SRA/IC": "47%"}, {"Employee ID": "", "Rep Name": "Chris Wootton", "QTR Status": "Level 1", "Counts Towards Club+%": "Y", "Equity Points": "9.75", "Days Since Last SRA": "4", "SRA QTR": "11.5", "CAP QTR": "9.5", "IC QTR": "6.5", "PTO": "", "PAI Status": "Base", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "0.5", "CAP to hit core": "Not Needed", "IC to hit Level 2": "Not Needed", "SRA to hit premier": "12.5", "CAP to hit high premier": "3.5", "IC to hit premier": "3.5", "AC/CS ratio": "0", "SRA/CAP": "83%", "CAP/IC": "68%", "SRA/IC": "57%"}, {"Employee ID": "", "Rep Name": "Keaton Mott", "QTR Status": "Level 1", "Counts Towards Club+%": "Y", "Equity Points": "4.5", "Days Since Last SRA": "2", "SRA QTR": "12.5", "CAP QTR": "7.5", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "Not Needed", "CAP to hit core": "Not Needed", "IC to hit Level 2": "2.0", "SRA to hit premier": "11.5", "CAP to hit high premier": "5.5", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "60%", "CAP/IC": "40%", "SRA/IC": "24%"}, {"Employee ID": "", "Rep Name": "Miggz Melgoza", "QTR Status": "Level 1", "Counts Towards Club+%": "Y", "Equity Points": "4.5", "Days Since Last SRA": "3", "SRA QTR": "12.5", "CAP QTR": "5", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ 72,000", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "Not Needed", "CAP to hit core": "2.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "11.5", "CAP to hit high premier": "8.0", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "40%", "CAP/IC": "60%", "SRA/IC": "24%"}, {"Employee ID": "", "Rep Name": "Brianna Carrubba", "QTR Status": "Level 1", "Counts Towards Club+%": "Y", "Equity Points": "6", "Days Since Last SRA": "5", "SRA QTR": "9.5", "CAP QTR": "7.5", "IC QTR": "4", "PTO": "#N/A", "PAI Status": "Base", "Pacing to make $$$ for the year based on this quarter's numbers only": "96000", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "2.5", "CAP to hit core": "Not Needed", "IC to hit Level 2": "1.0", "SRA to hit premier": "14.5", "CAP to hit high premier": "5.5", "IC to hit premier": "6.0", "AC/CS ratio": "0", "SRA/CAP": "79%", "CAP/IC": "53%", "SRA/IC": "42%"}, {"Employee ID": "", "Rep Name": "Keshawn Ledet", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "3", "Days Since Last SRA": "2", "SRA QTR": "8.5", "CAP QTR": "2", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "3.5", "CAP to hit core": "5.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "15.5", "CAP to hit high premier": "11.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "24%", "CAP/IC": "50%", "SRA/IC": "12%"}, {"Employee ID": "", "Rep Name": "Bronson Young", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "2.25", "Days Since Last SRA": "19", "SRA QTR": "10.5", "CAP QTR": "4.5", "IC QTR": "1.5", "PTO": "1", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "1.5", "SRA to hit Level 2": "1.5", "CAP to hit core": "2.5", "IC to hit Level 2": "3.5", "SRA to hit premier": "13.5", "CAP to hit high premier": "8.5", "IC to hit premier": "8.5", "AC/CS ratio": "0", "SRA/CAP": "43%", "CAP/IC": "33%", "SRA/IC": "14%"}, {"Employee ID": "", "Rep Name": "Courtney Poole", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "0.75", "Days Since Last SRA": "4", "SRA QTR": "10", "CAP QTR": "3.5", "IC QTR": "0.5", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "0.5", "IC needed to hit Level 1": "2.5", "SRA to hit Level 2": "2.0", "CAP to hit core": "3.5", "IC to hit Level 2": "4.5", "SRA to hit premier": "14.0", "CAP to hit high premier": "9.5", "IC to hit premier": "9.5", "AC/CS ratio": "0", "SRA/CAP": "35%", "CAP/IC": "14%", "SRA/IC": "5%"}, {"Employee ID": "", "Rep Name": "Bryan Cowling", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "4.5", "Days Since Last SRA": "3", "SRA QTR": "4", "CAP QTR": "0", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ 72,000", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "8.0", "CAP to hit core": "7.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "13.0", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "75%"}, {"Employee ID": "", "Rep Name": "Jeremy Ibarra", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "2", "SRA QTR": "12", "CAP QTR": "8", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "Not Needed", "CAP to hit core": "Not Needed", "IC to hit Level 2": "4.0", "SRA to hit premier": "12.0", "CAP to hit high premier": "5.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "67%", "CAP/IC": "13%", "SRA/IC": "8%"}, {"Employee ID": "", "Rep Name": "Eduardo Atayde", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "3", "Days Since Last SRA": "1", "SRA QTR": "8", "CAP QTR": "3", "IC QTR": "2", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "1.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "4.0", "CAP to hit core": "4.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "16.0", "CAP to hit high premier": "10.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "38%", "CAP/IC": "67%", "SRA/IC": "25%"}, {"Employee ID": "", "Rep Name": "Jonathan Bell", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "4.5", "Days Since Last SRA": "4", "SRA QTR": "4", "CAP QTR": "3", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "1.0", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "8.0", "CAP to hit core": "4.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "10.0", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "75%", "CAP/IC": "100%", "SRA/IC": "75%"}, {"Employee ID": "", "Rep Name": "Joshua Allen", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "6", "Days Since Last SRA": "4", "SRA QTR": "4", "CAP QTR": "2", "IC QTR": "4", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "8.0", "CAP to hit core": "5.0", "IC to hit Level 2": "1.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "11.0", "IC to hit premier": "6.0", "AC/CS ratio": "0", "SRA/CAP": "50%", "CAP/IC": "200%", "SRA/IC": "100%"}, {"Employee ID": "", "Rep Name": "Justin Kerby", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "9", "Days Since Last SRA": "26", "SRA QTR": "2", "CAP QTR": "2", "IC QTR": "6", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "144000", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "10.0", "CAP to hit core": "5.0", "IC to hit Level 2": "Not Needed", "SRA to hit premier": "22.0", "CAP to hit high premier": "11.0", "IC to hit premier": "4.0", "AC/CS ratio": "#N/A", "SRA/CAP": "100%", "CAP/IC": "300%", "SRA/IC": "300%"}, {"Employee ID": "", "Rep Name": "Michael Sarhene", "QTR Status": "No Status", "Counts Towards Club+%": "Y", "Equity Points": "9", "Days Since Last SRA": "10", "SRA QTR": "5", "CAP QTR": "5", "IC QTR": "6", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "2.0", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "7.0", "CAP to hit core": "2.0", "IC to hit Level 2": "Not Needed", "SRA to hit premier": "19.0", "CAP to hit high premier": "8.0", "IC to hit premier": "4.0", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "120%", "SRA/IC": "120%"}, {"Employee ID": "", "Rep Name": "Carter Glass", "QTR Status": "No Status", "Counts Towards Club+%": "N", "Equity Points": "2.25", "Days Since Last SRA": "7", "SRA QTR": "8", "CAP QTR": "3", "IC QTR": "1.5", "PTO": "", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "1.0", "IC needed to hit Level 1": "1.5", "SRA to hit Level 2": "4.0", "CAP to hit core": "4.0", "IC to hit Level 2": "3.5", "SRA to hit premier": "16.0", "CAP to hit high premier": "10.0", "IC to hit premier": "8.5", "AC/CS ratio": "0", "SRA/CAP": "0.4", "CAP/IC": "0.5", "SRA/IC": "0.2"}, {"Employee ID": "", "Rep Name": "Brock Morrison", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "6.5", "Days Since Last SRA": "8", "SRA QTR": "4", "CAP QTR": "4", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "8.0", "CAP to hit core": "3.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "9.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "25%", "SRA/IC": "25%"}, {"Employee ID": "", "Rep Name": "Dion Fletcher", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Mavryck Holmgren", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Joshua Cohen", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Marcos Cano Fernandez", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "7", "SRA QTR": "3", "CAP QTR": "1", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.0", "CAP to hit core": "6.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "12.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "33%", "CAP/IC": "0%", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Brandon Zuniga", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Daniel Snow", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "5", "SRA QTR": "3", "CAP QTR": "2", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.0", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "11.0", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "67%", "CAP/IC": "0%", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Gran Crum", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "3", "Days Since Last SRA": "24", "SRA QTR": "4.5", "CAP QTR": "1", "IC QTR": "2", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "2.5", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "7.5", "CAP to hit core": "6.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "19.5", "CAP to hit high premier": "12.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "22%", "CAP/IC": "200%", "SRA/IC": "44%"}, {"Employee ID": "", "Rep Name": "Laurence Dumoulin Morphis", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Jonah Sullivan", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "3", "Days Since Last SRA": "4", "SRA QTR": "4.5", "CAP QTR": "4", "IC QTR": "2", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "2.5", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "7.5", "CAP to hit core": "3.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "19.5", "CAP to hit high premier": "9.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "0.9", "CAP/IC": "0.5", "SRA/IC": "0.4"}, {"Employee ID": "", "Rep Name": "Shiloh Howard", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "7", "SRA QTR": "2.5", "CAP QTR": "1.5", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.5", "CAP needed to hit Club": "2.5", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.5", "CAP to hit core": "5.5", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.5", "CAP to hit high premier": "11.5", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.6", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Felton Byrd", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "4", "SRA QTR": "3", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Nick Soto", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "1.5", "Days Since Last SRA": "21", "SRA QTR": "0.5", "CAP QTR": "0", "IC QTR": "1", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.5", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "11.5", "CAP to hit core": "7.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "23.5", "CAP to hit high premier": "13.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "-.0", "CAP/IC": "0", "SRA/IC": "2.0"}, {"Employee ID": "", "Rep Name": "Victor Sandoval", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "3", "Days Since Last SRA": "3", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "2", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "50%", "CAP/IC": "200%", "SRA/IC": "100%"}, {"Employee ID": "", "Rep Name": "Jj Joseph", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Shawn Ledet", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Cameron Tucker", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "Base", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Rodney Perdomo", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kani Ware", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "82", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Henry Lozano", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "#N/A", "Days Since Last SRA": "2", "SRA QTR": "1", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Fernando Axume", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "1.5", "Days Since Last SRA": "71", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "1", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ 24,000", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Debbie Cabello", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "46", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "David Andrade", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "#N/A", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Freddie Damper", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0.75", "Days Since Last SRA": "17", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "0.5", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "2.5", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "4.5", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "9.5", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "50%", "SRA/IC": "50%"}, {"Employee ID": "", "Rep Name": "Darnell Bailey", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "70", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Dane Matarese", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "17", "SRA QTR": "0.5", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.5", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "11.5", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "23.5", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Simone Paryente", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "1.5", "Days Since Last SRA": "171", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "1", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Katie Boyd", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "3", "Days Since Last SRA": "5", "SRA QTR": "4", "CAP QTR": "1", "IC QTR": "2", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "48000", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "8.0", "CAP to hit core": "6.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "20.0", "CAP to hit high premier": "12.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "25%", "CAP/IC": "200%", "SRA/IC": "50%"}, {"Employee ID": "", "Rep Name": "Justin Mott", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "5", "SRA QTR": "2", "CAP QTR": "2", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "11.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "0%", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Kalin Reeves", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "3", "SRA QTR": "6", "CAP QTR": "3.5", "IC QTR": "1", "PTO": "1", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "1.0", "CAP needed to hit Club": "0.5", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "6.0", "CAP to hit core": "3.5", "IC to hit Level 2": "4.0", "SRA to hit premier": "18.0", "CAP to hit high premier": "9.5", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "58%", "CAP/IC": "29%", "SRA/IC": "17%"}, {"Employee ID": "", "Rep Name": "David Streeter", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "2.5", "Days Since Last SRA": "41", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "2", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "200%", "SRA/IC": "200%"}, {"Employee ID": "", "Rep Name": "Alan Frazier", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "3.75", "Days Since Last SRA": "34", "SRA QTR": "1", "CAP QTR": "0", "IC QTR": "2.5", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "0.5", "SRA to hit Level 2": "11.0", "CAP to hit core": "7.0", "IC to hit Level 2": "2.5", "SRA to hit premier": "23.0", "CAP to hit high premier": "13.0", "IC to hit premier": "7.5", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "250%"}, {"Employee ID": "", "Rep Name": "Julie Conkle", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "0", "Days Since Last SRA": "75", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Carson Torre", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "13", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "1", "PTO": "", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "24000", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "50%", "CAP/IC": "100%", "SRA/IC": "50%"}, {"Employee ID": "", "Rep Name": "Matthew Polanco", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "3.75", "Days Since Last SRA": "11", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "2.5", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ 60,000", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "0.5", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "2.5", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "7.5", "AC/CS ratio": "0", "SRA/CAP": "50%", "CAP/IC": "250%", "SRA/IC": "125%"}, {"Employee ID": "", "Rep Name": "Trey Rosenberg", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "91", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "John Cable", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "53", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Ahmad Ashour", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "7", "SRA QTR": "6.5", "CAP QTR": "3", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ 24,000", "SRA needed to hit Level 1": "0.5", "CAP needed to hit Club": "1.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "5.5", "CAP to hit core": "4.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "17.5", "CAP to hit high premier": "10.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "46%", "CAP/IC": "33%", "SRA/IC": "15%"}, {"Employee ID": "", "Rep Name": "Adrian Pena", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "2.25", "Days Since Last SRA": "18", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "1.5", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.5", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "3.5", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "8.5", "AC/CS ratio": "0", "SRA/CAP": "100%", "CAP/IC": "150%", "SRA/IC": "150%"}, {"Employee ID": "", "Rep Name": "Denise Faber", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "2", "SRA QTR": "1", "CAP QTR": "0.5", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.5", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.5", "IC to hit Level 2": "5.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.5", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "50%", "CAP/IC": "0%", "SRA/IC": "0%"}, {"Employee ID": "", "Rep Name": "Collin Carter", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "Y", "Equity Points": "1.5", "Days Since Last SRA": "26", "SRA QTR": "1", "CAP QTR": "0", "IC QTR": "1", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "7.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "13.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "0%", "CAP/IC": "0", "SRA/IC": "100%"}, {"Employee ID": "", "Rep Name": "Jay Baumann", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "69", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Sami Naqvi", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "#N/A", "Days Since Last SRA": "96", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Alex Hepworth", "QTR Status": "No Status", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "6", "SRA QTR": "9", "CAP QTR": "3", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "1.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "3.0", "CAP to hit core": "4.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "15.0", "CAP to hit high premier": "10.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.3", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Jordan Clark", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "3", "Days Since Last SRA": "34", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "2", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "2.0", "SRA/IC": "2.0"}, {"Employee ID": "", "Rep Name": "Alan Gonzalez Licona", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Shasta Fontaine", "QTR Status": "No Status - Redemption", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "7", "SRA QTR": "3.5", "CAP QTR": "3.5", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "3.5", "CAP needed to hit Club": "0.5", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "8.5", "CAP to hit core": "3.5", "IC to hit Level 2": "5.0", "SRA to hit premier": "20.5", "CAP to hit high premier": "9.5", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Nicholas Copenbarger", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "4.5", "Days Since Last SRA": "34", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "0.5", "CAP/IC": "3.0", "SRA/IC": "1.5"}, {"Employee ID": "", "Rep Name": "Anthony Mcdowell", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Gavin Young", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0.75", "Days Since Last SRA": "11", "SRA QTR": "4", "CAP QTR": "2", "IC QTR": "0.5", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "3.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "2.5", "SRA to hit Level 2": "8.0", "CAP to hit core": "5.0", "IC to hit Level 2": "4.5", "SRA to hit premier": "20.0", "CAP to hit high premier": "11.0", "IC to hit premier": "9.5", "AC/CS ratio": "0", "SRA/CAP": "0.5", "CAP/IC": "0.3", "SRA/IC": "0.1"}, {"Employee ID": "", "Rep Name": "Stephen Scott", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "15", "Days Since Last SRA": "4", "SRA QTR": "12", "CAP QTR": "10", "IC QTR": "10", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "Not Needed", "CAP to hit core": "Not Needed", "IC to hit Level 2": "Not Needed", "SRA to hit premier": "12.0", "CAP to hit high premier": "3.0", "IC to hit premier": "Not Needed", "AC/CS ratio": "0", "SRA/CAP": "0.8", "CAP/IC": "1.0", "SRA/IC": "0.8"}, {"Employee ID": "", "Rep Name": "Blake Rowe", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Thomas Gill", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Joseph Shyka", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Brody Banks", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Dylan Olsen", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "3", "Days Since Last SRA": "49", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "2", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "1.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "3.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "8.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Joseph Jacobson", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Rachid Atmai", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Bryson Lau Lau", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Christian Davis", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "80", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Paul Pricor", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Abigail Tucker", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Damian Christopherson", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Ruben Briones", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "9", "SRA QTR": "3", "CAP QTR": "1", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.0", "CAP to hit core": "6.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "12.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.3", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "John Aguilar Navarro", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kyle Moseley", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Diego Carrillo", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Joseph Donohue", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Vernon Daniel", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Simon Estrada", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Brayden Garrison", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Zaid Nimri", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "48", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Mauricio Medrano Rios", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Ozzy Garcia", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Taylor Turney", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Justin Cooper", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Edward Molina", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "62", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Nebiat Tesfay", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "6", "SRA QTR": "2.5", "CAP QTR": "2", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.5", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.5", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.5", "CAP to hit high premier": "11.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.8", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Markus Bohn", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "2", "SRA QTR": "2", "CAP QTR": "2", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "11.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Malachi Shelton", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "62", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Skylyr Smallwood", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Handrettie Reyes", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Gregory DeleonGuerrero Quitano", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Lena Burghardt", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "1", "SRA QTR": "12", "CAP QTR": "10", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "Not Needed", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "Not Needed", "CAP to hit core": "Not Needed", "IC to hit Level 2": "5.0", "SRA to hit premier": "12.0", "CAP to hit high premier": "3.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.8", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Litzy Delgado", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kevin Keeley", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "4.5", "Days Since Last SRA": "10", "SRA QTR": "3", "CAP QTR": "4", "IC QTR": "3", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "Not Needed", "IC needed to hit Level 1": "Not Needed", "SRA to hit Level 2": "9.0", "CAP to hit core": "3.0", "IC to hit Level 2": "2.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "9.0", "IC to hit premier": "7.0", "AC/CS ratio": "0", "SRA/CAP": "1.3", "CAP/IC": "0.8", "SRA/IC": "1.0"}, {"Employee ID": "", "Rep Name": "Hagan Harrison", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Jacob Honea", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Weseley Mcgirt", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kyler Gick", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "17", "SRA QTR": "3", "CAP QTR": "2", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "4.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "9.0", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "21.0", "CAP to hit high premier": "11.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.7", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Samuel Chism", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Nathan Saenz", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Duke Hada", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Diego Aires", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "26", "SRA QTR": "1", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "-.0", "CAP/IC": "0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Joshua Raterman", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Ryan Brack", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Daniel Meyer", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "1.5", "Days Since Last SRA": "28", "SRA QTR": "1", "CAP QTR": "1", "IC QTR": "1", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "6.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "2.0", "SRA to hit Level 2": "11.0", "CAP to hit core": "6.0", "IC to hit Level 2": "4.0", "SRA to hit premier": "23.0", "CAP to hit high premier": "12.0", "IC to hit premier": "9.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "1.0", "SRA/IC": "1.0"}, {"Employee ID": "", "Rep Name": "Christopher Alvarado Medina", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Sergio Gonzalez", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Zak Lewis", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Sonya Barber", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Dan Glass", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "10", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0.5", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Quinton Donohoe", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "7", "SRA QTR": "2", "CAP QTR": "2", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "2.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "5.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "11.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "1.0", "CAP/IC": "-.0", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Ron Sams", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kolten Melgaard", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Maxwell Jones", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "William Chandler", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Krystal Peters", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Christopher Beggs", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Thomas Huggins", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Jeremy Chaffee", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "25", "SRA QTR": "2", "CAP QTR": "1", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "5.0", "CAP needed to hit Club": "3.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "10.0", "CAP to hit core": "6.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "22.0", "CAP to hit high premier": "12.0", "IC to hit premier": "10.0", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": "-.0"}, {"Employee ID": "", "Rep Name": "Alijah Heineman", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Kwamese Brown", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Khaldyn Boul", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Marlon Mcglothon", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "#N/A", "PAI Status": "underperformer", "Pacing to make $$$ for the year based on this quarter's numbers only": "", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Juan Montes", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Hanna Smith", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Marcus Owens", "QTR Status": "Combine", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Sergio Sosa", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Michael Essix", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Christopher Villachica Lopez", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Fatima Canales", "QTR Status": "Not Started", "Counts Towards Club+%": "N", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "0", "CAP QTR": "0", "IC QTR": "0", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "$ -", "SRA needed to hit Level 1": "7.0", "CAP needed to hit Club": "4.0", "IC needed to hit Level 1": "3.0", "SRA to hit Level 2": "12.0", "CAP to hit core": "7.0", "IC to hit Level 2": "5.0", "SRA to hit premier": "24.0", "CAP to hit high premier": "13.0", "IC to hit premier": "10.0", "AC/CS ratio": "0", "SRA/CAP": "0", "CAP/IC": "0", "SRA/IC": "#DIV/0!"}, {"Employee ID": "", "Rep Name": "Luc Fadness", "QTR Status": "Combine", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Landon Lacik", "QTR Status": "Not Started", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Liam Christophers", "QTR Status": "Combine", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Riley Mcshea", "QTR Status": "Not Started", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Roman Mortensen", "QTR Status": "Not Started", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Tony Ledet", "QTR Status": "Not Started", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}, {"Employee ID": "", "Rep Name": "Johnathan Nuss", "QTR Status": "Not Started", "Counts Towards Club+%": "", "Equity Points": "0", "Days Since Last SRA": "", "SRA QTR": "", "CAP QTR": "", "IC QTR": "", "PTO": "", "PAI Status": "", "Pacing to make $$$ for the year based on this quarter's numbers only": "0", "SRA needed to hit Level 1": "", "CAP needed to hit Club": "", "IC needed to hit Level 1": "", "SRA to hit Level 2": "", "CAP to hit core": "", "IC to hit Level 2": "", "SRA to hit premier": "", "CAP to hit high premier": "", "IC to hit premier": "", "AC/CS ratio": "", "SRA/CAP": "", "CAP/IC": "", "SRA/IC": ""}]};
+const SEED_TAB2 = {"metrics": [{"label": "SRA", "target": "718", "actual": "263", "actualToTarget": "37%", "pacing": "147%", "perDayRequired": "11"}, {"label": "CAP", "target": "443", "actual": "155", "actualToTarget": "35%", "pacing": "137%", "perDayRequired": "7"}, {"label": "IC", "target": "276", "actual": "101", "actualToTarget": "37%", "pacing": "98%", "perDayRequired": "4"}], "secondary": [{"label": "Level 1", "target": "18", "actual": "5", "actualToTarget": "28%"}, {"label": "Draft", "target": "3", "actual": "1", "actualToTarget": "33%"}, {"label": "Start", "target": "10", "actual": "20", "actualToTarget": "200%"}], "ratios": [{"label": "SRA/IC", "value": "38%"}, {"label": "CAP/IC", "value": "65%"}, {"label": "SRA/CAP", "value": "59%"}], "tiers": [{"label": "High Performer", "sra": "24", "cap": "13", "ic": "10", "income": "240000.00"}, {"label": "Productive", "sra": "12", "cap": "7", "ic": "5", "income": "120000.00"}, {"label": "Base", "sra": "7", "cap": "4", "ic": "3", "income": "72000.00"}, {"label": "Underperformer", "sra": "4", "cap": "2", "ic": "2", "income": "37009.21"}, {"label": "Non Performer", "sra": "Below", "cap": "Below", "ic": "Below", "income": "Insignificant"}]};
+const TAB1_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtXif-IdmDmPtcFocOEqcLmNUKiBtfjL5Bz91as30pLdA3DnNnrqYWljslIxr22g/pub?gid=479419295&single=true&output=csv';
+const TAB2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtXif-IdmDmPtcFocOEqcLmNUKiBtfjL5Bz91as30pLdA3DnNnrqYWljslIxr22g/pub?gid=1213292172&single=true&output=csv';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMgf4vYgYRImUVAlAMy4YhMhZrOsLjC8oWlfIroaQpRSNMVUuGPPa_h9UY2X_Js3du/exec';
+
+function loadViaJsonp(url, timeoutMs){
+  return new Promise((resolve, reject) => {
+    const cbName = '__jsonp_cb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    let done = false;
+    const cleanup = () => {
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+    window[cbName] = (data) => {
+      if(done) return;
+      done = true;
+      cleanup();
+      resolve(data);
+    };
+    script.onerror = () => {
+      if(done) return;
+      done = true;
+      cleanup();
+      reject(new Error('JSONP script load failed'));
+    };
+    const sep = url.includes('?') ? '&' : '?';
+    script.src = url + sep + 'callback=' + cbName;
+    document.body.appendChild(script);
+    setTimeout(() => {
+      if(done) return;
+      done = true;
+      cleanup();
+      reject(new Error('JSONP timed out'));
+    }, timeoutMs || 8000);
+  });
+}
+
+function sheetRowsToTSV(rows){
+  return rows.map(row => row.map(cell => {
+    let s = (cell === null || cell === undefined) ? '' : String(cell);
+    if(s.includes('\t') || s.includes('"') || s.includes('\n')){
+      s = '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  }).join('\t')).join('\n');
+}
+
+let currentTab = 'tab1';
+let currentView = 'cards';
+let store = { tab1: null, tab2: null };
+let fetchStatus = { tab1: 'pending', tab2: 'pending' };
+window.__SEED__ = true;
+
+const HIDDEN_COLUMNS = [
+  'PTO',
+  'PAI Status',
+  'Pacing to make $$$ for the year based on this quarter\'s numbers only',
+  'SRA to hit Level 2',
+  'CAP to hit core',
+  'IC to hit Level 2',
+  'SRA to hit premier',
+  'CAP to hit high premier',
+  'IC to hit premier',
+  'AC/CS ratio',
+  'CAP needed to hit Club',
+  'Employee ID'
+];
+
+const HEADER_RENAMES = {
+  'counts towards club+%': 'Count Towards Level 1'
+};
+
+function applyHiddenColumns(parsed){
+  if(!parsed) return parsed;
+  const hiddenSet = new Set(HIDDEN_COLUMNS.map(h => h.toLowerCase()));
+  const headers = parsed.headers
+    .filter(h => !hiddenSet.has(h.toLowerCase()))
+    .map(h => HEADER_RENAMES[h.toLowerCase()] || h);
+  const originalHeaders = parsed.headers.filter(h => !hiddenSet.has(h.toLowerCase()));
+  const rows = parsed.rows.map(row => {
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = row[originalHeaders[idx]]);
+    return obj;
+  });
+  return { headers, rows };
+}
+
+function parseDelimitedLine(line, delim){
+  const out = []; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQ){
+      if(c === '"'){
+        if(line[i+1] === '"'){ cur+='"'; i++; } else { inQ=false; }
+      } else cur+=c;
+    } else {
+      if(c === '"') inQ=true;
+      else if(c === delim){ out.push(cur); cur=''; }
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function parseRows(text){
+  const lines = text.split(/\r?\n/);
+  const sample = lines.slice(0,5).join('\n');
+  const delim = sample.includes('\t') ? '\t' : ',';
+  return lines.map(l => parseDelimitedLine(l, delim));
+}
+
+function firstNonEmptyIndex(row){
+  for(let i=0;i<row.length;i++){ if(row[i] && row[i].trim()) return i; }
+  return -1;
+}
+
+function parseRepTable(text){
+  const rows = parseRows(text);
+  const headerIdx = rows.findIndex(r => r.some(c => c.trim().toLowerCase() === 'rep name'));
+  if(headerIdx === -1) return null;
+  const rawHeaders = rows[headerIdx];
+  const nameColIdx = rawHeaders.findIndex(c => c.trim().toLowerCase() === 'rep name');
+  const validCols = rawHeaders.map((h,i) => ({h: h.trim(), i})).filter(x => x.h.length);
+  const headers = validCols.map(x => x.h);
+  const dataRows = [];
+  for(let r = headerIdx+1; r < rows.length; r++){
+    const row = rows[r];
+    if(!row[nameColIdx] || !row[nameColIdx].trim()) break;
+    const obj = {};
+    validCols.forEach(x => obj[x.h] = (row[x.i] !== undefined ? row[x.i] : ''));
+    dataRows.push(obj);
+  }
+  if(!dataRows.length) return null;
+  return { headers, rows: dataRows };
+}
+
+function findLabelRow(rows, label){
+  for(const row of rows){
+    const i = firstNonEmptyIndex(row);
+    if(i >= 0 && row[i].trim().toLowerCase() === label.toLowerCase()) return {row, i};
+  }
+  return null;
+}
+
+function findLabelRowAnywhere(rows, label){
+  for(const row of rows){
+    const i = row.findIndex(c => c.trim().toLowerCase() === label.toLowerCase());
+    if(i >= 0) return {row, i};
+  }
+  return null;
+}
+
+function parseTeamSummary(text){
+  const rows = parseRows(text);
+  const metrics = [];
+  ['SRA','CAP','IC'].forEach(label => {
+    const found = findLabelRow(rows, label);
+    if(found){
+      const {row, i} = found;
+      metrics.push({
+        label, target: row[i+1]||'', actual: row[i+2]||'', actualToTarget: row[i+3]||'',
+        pacing: row[i+4]||'', daysRemaining: row[i+6]||'', perDayRequired: row[i+7]||''
+      });
+    }
+  });
+  const secondary = [];
+  ['Level 1','Draft','Start'].forEach(label => {
+    const found = findLabelRow(rows, label);
+    if(found){
+      const {row, i} = found;
+      secondary.push({ label, target: row[i+1]||'', actual: row[i+2]||'', actualToTarget: row[i+3]||'' });
+    }
+  });
+  const ratios = [];
+  ['SRA/IC','CAP/IC','SRA/CAP'].forEach(label => {
+    const found = findLabelRow(rows, label);
+    if(found){
+      const {row, i} = found;
+      ratios.push({ label, value: row[i+1]||'' });
+    }
+  });
+  const tiers = [];
+  ['High Performer','Productive','Base','Underperformer','Non Performer'].forEach(label => {
+    const found = findLabelRowAnywhere(rows, label);
+    if(found){
+      const {row, i} = found;
+      tiers.push({ label, sra: row[i+1]||'', cap: row[i+2]||'', ic: row[i+3]||'', income: row[i+4]||'' });
+    }
+  });
+
+  // Find total quarter length (e.g. "Number of days in the qrt" ... 92) anywhere in the sheet
+  let totalDays = null;
+  outer:
+  for(const row of rows){
+    for(let i=0;i<row.length;i++){
+      if(row[i] && /days in the qrt/i.test(row[i])){
+        for(let j=i+1;j<row.length;j++){
+          if(row[j] && row[j].trim() !== ''){
+            const n = parseFloat(row[j]);
+            if(!isNaN(n)){ totalDays = n; break outer; }
+          }
+        }
+      }
+    }
+  }
+  const daysRemaining = metrics.length ? parseFloat(metrics[0].daysRemaining) : NaN;
+  const daysElapsed = (totalDays !== null && !isNaN(daysRemaining)) ? (totalDays - daysRemaining) : null;
+
+  if(!metrics.length && !secondary.length && !tiers.length) return null;
+  return { metrics, secondary, ratios, tiers, totalDays, daysElapsed };
+}
+
+async function tryLiveFetch(){
+  const banner = document.getElementById('fetchBanner');
+  let jsonpError = null;
+
+  // Primary method: Apps Script JSONP (bypasses CORS entirely)
+  try{
+    const data = await loadViaJsonp(APPS_SCRIPT_URL, 20000);
+    if(data && data.tab1 && data.tab2){
+      const tab1Text = sheetRowsToTSV(data.tab1);
+      const tab2Text = sheetRowsToTSV(data.tab2);
+      const parsed1 = applyHiddenColumns(parseRepTable(tab1Text));
+      const parsed2 = parseTeamSummary(tab2Text);
+      let ok1 = false, ok2 = false;
+      if(parsed1){ await saveData('tab1', parsed1); fetchStatus.tab1 = 'ok'; ok1 = true; }
+      if(parsed2){ await saveData('tab2', parsed2); fetchStatus.tab2 = 'ok'; ok2 = true; }
+      if(ok1 || ok2){
+        banner.innerHTML = '';
+        document.getElementById('statusDot').style.background = (ok1 && ok2) ? 'var(--green)' : 'var(--gold)';
+        return;
+      } else {
+        jsonpError = 'Apps Script responded, but the data inside it could not be parsed into rep/team tables.';
+      }
+    } else {
+      jsonpError = 'Apps Script responded, but not with the expected {tab1, tab2} format. Got: ' + JSON.stringify(data).slice(0,200);
+    }
+  }catch(e){
+    jsonpError = 'Apps Script request failed: ' + e.message;
+  }
+  console.warn('Live fetch (Apps Script) issue:', jsonpError);
+
+  // Fallback method: published CSV (works only if hosted with permissive CORS)
+  let anyOk = false, anyFail = false;
+  try{
+    const res1 = await fetch(TAB1_URL);
+    if(res1.ok){
+      const text1 = await res1.text();
+      const parsed1 = applyHiddenColumns(parseRepTable(text1));
+      if(parsed1){ await saveData('tab1', parsed1); fetchStatus.tab1 = 'ok'; anyOk = true; }
+      else { fetchStatus.tab1 = 'empty'; anyFail = true; }
+    } else { fetchStatus.tab1 = 'fail'; anyFail = true; }
+  }catch(e){ fetchStatus.tab1 = 'fail'; anyFail = true; }
+  try{
+    const res2 = await fetch(TAB2_URL);
+    if(res2.ok){
+      const text2 = await res2.text();
+      const parsed2 = parseTeamSummary(text2);
+      if(parsed2){ await saveData('tab2', parsed2); fetchStatus.tab2 = 'ok'; anyOk = true; }
+      else { fetchStatus.tab2 = 'empty'; anyFail = true; }
+    } else { fetchStatus.tab2 = 'fail'; anyFail = true; }
+  }catch(e){ fetchStatus.tab2 = 'fail'; anyFail = true; }
+
+  if(anyOk && !anyFail){
+    banner.innerHTML = '';
+    document.getElementById('statusDot').style.background = 'var(--green)';
+  } else if(anyOk && anyFail){
+    banner.innerHTML = '<div class="banner banner-warn">Some data loaded live, some did not — showing last saved data where needed. Use Paste data to update manually.</div>';
+    document.getElementById('statusDot').style.background = 'var(--gold)';
+  } else {
+    banner.innerHTML = '<div class="banner banner-warn">Live fetch didn\'t work this time: ' + (jsonpError || 'unknown error') + ' — showing last saved data.</div>';
+    document.getElementById('statusDot').style.background = 'var(--gold)';
+  }
+}
+
+async function loadCached(){
+  for(const key of ['tab1','tab2']){
+    try{
+      const value = await storageGetRaw(key);
+      if(value) store[key] = JSON.parse(value);
+    }catch(e){ store[key] = store[key] || null; }
+  }
+  if(!store.tab1 && typeof SEED_TAB1 !== 'undefined') store.tab1 = SEED_TAB1;
+  if(!store.tab2 && typeof SEED_TAB2 !== 'undefined') store.tab2 = SEED_TAB2;
+  if(store.tab1) store.tab1 = applyHiddenColumns(store.tab1);
+}
+
+async function storageGetRaw(key){
+  if(window.storage){
+    try{
+      const res = await window.storage.get(key, false);
+      return res ? res.value : null;
+    }catch(e){ return null; }
+  }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+
+async function saveData(key, parsed){
+  const json = JSON.stringify(parsed);
+  if(window.storage){
+    try{ await window.storage.set(key, json, false); }
+    catch(e){ try{ localStorage.setItem(key, json); }catch(e2){} }
+  } else {
+    try{ localStorage.setItem(key, json); }catch(e){}
+  }
+  store[key] = parsed;
+}
+
+function isEmptyVal(v){ return !v || v === '#N/A' || v.trim() === ''; }
+function isAchieved(v){ return /not needed/i.test(v) || /^-\s*\.0$/.test(v.trim()); }
+
+function classify(headers){
+  const nameCol = headers.find(h => /name/i.test(h)) || headers[0];
+  const statusCols = headers.filter(h => /status/i.test(h));
+  const neededCols = headers.filter(h => /need/i.test(h) || /to hit/i.test(h));
+  const ratioCols = headers.filter(h => /ratio/i.test(h) || /\//.test(h));
+  const used = new Set([nameCol, ...statusCols, ...neededCols, ...ratioCols]);
+  const restCols = headers.filter(h => !used.has(h) && h.trim().length);
+  return { nameCol, statusCols, neededCols, ratioCols, restCols };
+}
+
+function statusBadgeClass(val){
+  if(!val) return 'b-neutral';
+  if(/premier/i.test(val)) return 'b-premier';
+  if(/level\s*3/i.test(val)) return 'b-gold';
+  if(/level\s*2/i.test(val) || /core/i.test(val)) return 'b-silver';
+  if(/level\s*1/i.test(val) || /club/i.test(val) || /base/i.test(val)) return 'b-blue';
+  if(/underperform/i.test(val)) return 'b-red';
+  return 'b-neutral';
+}
+
+const LEVEL1_SRA_STRONG_THRESHOLD = 5;
+
+function countPacingForLevel1(parsed){
+  const { statusCols } = classify(parsed.headers);
+  const statusCol = statusCols.find(c => /qtr/i.test(c)) || statusCols[0];
+  const clubCol = parsed.headers.find(h => /count.*towards.*level.*1/i.test(h));
+  const sraQtrCol = parsed.headers.find(h => /^sra qtr$/i.test(h));
+  const icNeededCol = parsed.headers.find(h => /ic needed to hit level 1/i.test(h));
+  if(!clubCol || !sraQtrCol) return null;
+
+  let count = 0;
+  parsed.rows.forEach(r => {
+    const club = (r[clubCol]||'').trim().toUpperCase();
+    if(club !== 'Y') return;
+    const status = statusCol ? (r[statusCol]||'') : '';
+    const alreadyLevel1Plus = /level\s*1|level\s*2|level\s*3|premier/i.test(status);
+    if(alreadyLevel1Plus) return;
+
+    const sraQtr = parseFloat(r[sraQtrCol]) || 0;
+    const sraStrong = sraQtr > LEVEL1_SRA_STRONG_THRESHOLD;
+    const installsMet = icNeededCol ? isAchieved(r[icNeededCol] || '') : false;
+
+    if(sraStrong || installsMet) count++;
+  });
+  return count;
+}
+
+function renderStats(parsed){
+  const statsRow = document.getElementById('statsRow');
+  if(!parsed){ statsRow.classList.add('hidden'); return; }
+  const { statusCols } = classify(parsed.headers);
+  const total = parsed.rows.length;
+  const statusCol = statusCols.find(c => /qtr/i.test(c)) || statusCols[0];
+  let premier=0, level3=0, level2=0, level1=0;
+  if(statusCol){
+    parsed.rows.forEach(r => {
+      const v = r[statusCol] || '';
+      if(/premier/i.test(v)) premier++;
+      else if(/level\s*3/i.test(v)) level3++;
+      else if(/level\s*2/i.test(v)) level2++;
+      else if(/level\s*1/i.test(v)) level1++;
+    });
+  }
+  const pacingCount = countPacingForLevel1(parsed);
+  const pacingTile = pacingCount === null
+    ? `<div class="stat" style="border-top-color:var(--green)"><div class="lbl">Pacing for Level 1</div><div class="val" style="color:var(--text-faint);font-size:22px">&mdash;</div></div>`
+    : `<div class="stat" style="border-top-color:var(--green)"><div class="lbl">Pacing for Level 1</div><div class="val" style="color:var(--green)">+${pacingCount}</div></div>`;
+  statsRow.innerHTML = `
+    <div class="stat"><div class="lbl">Total reps</div><div class="val">${total}</div></div>
+    <div class="stat" style="border-top-color:var(--premier)"><div class="lbl">Premier</div><div class="val" style="color:var(--premier)">${premier}</div></div>
+    <div class="stat" style="border-top-color:var(--gold)"><div class="lbl">Level 3</div><div class="val" style="color:var(--gold)">${level3}</div></div>
+    <div class="stat" style="border-top-color:var(--silver)"><div class="lbl">Level 2</div><div class="val" style="color:var(--silver)">${level2}</div></div>
+    <div class="stat" style="border-top-color:var(--blue)"><div class="lbl">Level 1</div><div class="val" style="color:var(--blue)">${level1}</div></div>
+    ${pacingTile}
+  `;
+  statsRow.classList.remove('hidden');
+}
+
+function renderControls(parsed){
+  const controlsRow = document.getElementById('controlsRow');
+  const sortSel = document.getElementById('sortBy');
+  if(!parsed){ controlsRow.classList.add('hidden'); return; }
+  const currentValue = sortSel.value;
+  sortSel.innerHTML = parsed.headers.map(h => `<option value="${h}">Sort: ${h}</option>`).join('');
+  if(currentValue && parsed.headers.includes(currentValue)){
+    sortSel.value = currentValue;
+  } else {
+    const { statusCols } = classify(parsed.headers);
+    const qtrCol = statusCols.find(c => /qtr/i.test(c));
+    if(qtrCol) sortSel.value = qtrCol;
+  }
+  controlsRow.classList.remove('hidden');
+}
+
+function buildLadder(neededCols, row){
+  if(!neededCols.length) return '';
+  let groupSize = neededCols.length % 3 === 0 ? 3 : neededCols.length;
+  const rowsOut = [];
+  for(let i=0;i<neededCols.length;i+=groupSize) rowsOut.push(neededCols.slice(i,i+groupSize));
+  let html = '<div class="ladder">';
+  rowsOut.forEach((group, idx) => {
+    html += `<div class="chip-label">${groupSize===3 ? 'Tier '+(idx+1) : ''}</div><div class="ladder-row">`;
+    group.forEach(col => {
+      const val = row[col] || '';
+      const shortLabel = col.replace(/needed to hit|to hit/i,'').trim().slice(0,14);
+      if(isEmptyVal(val)) html += `<div class="chip chip-na">${shortLabel||col}<br>&mdash;</div>`;
+      else if(isAchieved(val)) html += `<div class="chip chip-done">${shortLabel||col}<br>Achieved</div>`;
+      else html += `<div class="chip chip-pending">${shortLabel||col}<br>${val} more</div>`;
+    });
+    html += '</div>';
+  });
+  return html + '</div>';
+}
+
+function statusRank(v){
+  if(!v) return 99;
+  const s = v.toLowerCase();
+  if(/premier/.test(s)) return 0;
+  if(/level\s*3/.test(s)) return 1;
+  if(/level\s*2/.test(s)) return 2;
+  if(/level\s*1/.test(s)) return 3;
+  return 4;
+}
+
+function ynRank(v){
+  if(!v) return 2;
+  const s = v.trim().toUpperCase();
+  if(s === 'Y') return 0;
+  if(s === 'N') return 1;
+  return 2;
+}
+
+function filterAndSort(parsed){
+  const { nameCol, statusCols } = classify(parsed.headers);
+  const search = document.getElementById('search').value.trim().toLowerCase();
+  const sortBy = document.getElementById('sortBy').value || nameCol;
+  let rows = parsed.rows.slice();
+  if(search) rows = rows.filter(r => (r[nameCol]||'').toLowerCase().includes(search));
+  const isStatusCol = statusCols.includes(sortBy) && /qtr/i.test(sortBy);
+  const isYNCol = /count.*towards.*level.*1/i.test(sortBy);
+  rows.sort((a,b) => {
+    if(isStatusCol){
+      const diff = statusRank(a[sortBy]) - statusRank(b[sortBy]);
+      if(diff !== 0) return diff;
+      return (a[nameCol]||'').localeCompare(b[nameCol]||'');
+    }
+    if(isYNCol){
+      const diff = ynRank(a[sortBy]) - ynRank(b[sortBy]);
+      if(diff !== 0) return diff;
+      return (a[nameCol]||'').localeCompare(b[nameCol]||'');
+    }
+    const av=a[sortBy]||'', bv=b[sortBy]||'';
+    const an=parseFloat(av), bn=parseFloat(bv);
+    if(!isNaN(an) && !isNaN(bn)) return bn-an;
+    return av.localeCompare(bv);
+  });
+  return rows;
+}
+
+function renderCards(parsed){
+  const { nameCol, statusCols, neededCols, ratioCols, restCols } = classify(parsed.headers);
+  const rows = filterAndSort(parsed);
+  if(!rows.length) return `<div class="empty">No reps match your search.</div>`;
+  return `<div class="cards">` + rows.map(row => {
+    const name = row[nameCol] || 'Unnamed';
+    const statusCol = statusCols.find(c => /qtr/i.test(c)) || statusCols[0];
+    const borderColor = statusCol ? statusColorVar(row[statusCol]) : 'var(--border)';
+    const statusBadges = statusCols.map(sc => {
+      const v = row[sc];
+      return isEmptyVal(v) ? '' : `<span class="badge ${statusBadgeClass(v)}">${v}</span>`;
+    }).join(' ');
+    const details = restCols.map(col => `<div class="detail"><span class="k">${col}</span><span class="v">${isEmptyVal(row[col])?'&mdash;':row[col]}</span></div>`).join('');
+    const ratios = ratioCols.map(col => `<div class="ratio"><span class="rk">${col}</span><span class="rv">${isEmptyVal(row[col])?'&mdash;':row[col]}</span></div>`).join('');
+    return `<div class="card" style="border-left-color:${borderColor}">
+      <div class="card-head"><div class="name">${name}</div><div>${statusBadges}</div></div>
+      <div class="detail-grid">${details}</div>
+      ${buildLadder(neededCols, row)}
+      <div class="ratios">${ratios}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function statusColorVar(val){
+  const cls = statusBadgeClass(val);
+  const map = {
+    'b-premier': 'var(--premier)',
+    'b-gold': 'var(--gold)',
+    'b-silver': 'var(--silver)',
+    'b-blue': 'var(--blue)',
+    'b-red': 'var(--red)',
+    'b-neutral': 'var(--text-dim)'
+  };
+  return map[cls] || 'var(--text-dim)';
+}
+
+function renderTable(parsed){
+  const { statusCols, neededCols } = classify(parsed.headers);
+  const rows = filterAndSort(parsed);
+  if(!rows.length) return `<div class="empty">No reps match your search.</div>`;
+  const headers = parsed.headers;
+  return `<div class="tablewrap"><table>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>{
+      const statusCol = statusCols.find(c=>/qtr/i.test(c)) || statusCols[0];
+      const borderColor = statusCol ? statusColorVar(r[statusCol]) : 'transparent';
+      return `<tr style="border-left:4px solid ${borderColor}">${headers.map(h => {
+        const v = r[h];
+        if(statusCols.includes(h) && !isEmptyVal(v)){
+          return `<td><span style="color:${statusColorVar(v)};font-weight:800;font-size:13px">${v}</span></td>`;
+        }
+        if(neededCols.includes(h) && !isEmptyVal(v) && isAchieved(v)){
+          return `<td><span style="color:var(--green);font-weight:800">${v}</span></td>`;
+        }
+        return `<td>${isEmptyVal(v)?'&mdash;':v}</td>`;
+      }).join('')}</tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function pct(v){
+  const n = parseFloat(v);
+  if(isNaN(n)) return 0;
+  return v.includes('%') ? n : n*100;
+}
+
+function buildKpiCard(label, actual, target, meta){
+  const targetNum = parseFloat(target)||0;
+  const actualNum = parseFloat(actual)||0;
+  const width = targetNum > 0 ? Math.min(100, (actualNum/targetNum)*100) : 0;
+  const metaHtml = meta.map(m => `<span>${m.label}: <b>${m.value||'&mdash;'}</b></span>`).join('');
+  return `<div class="kpi">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-nums"><span class="kpi-actual">${actual||'0'}</span><span class="kpi-target">/ ${target||'0'} target</span></div>
+    <div class="pbar"><div class="pbar-fill" style="width:${width}%"></div></div>
+    <div class="kpi-meta">${metaHtml}</div>
+  </div>`;
+}
+
+function renderTeamOverview(summary){
+  if(!summary) return `<div class="empty">No team overview data yet.<br><button id="emptyPasteBtn2" class="primary">Paste data</button></div>`;
+  const kpis = summary.metrics.map(m => buildKpiCard(m.label, m.actual, m.target, [
+    { label: 'To target', value: m.actualToTarget },
+    { label: 'Pacing', value: m.pacing }
+  ])).join('');
+  const secondary = summary.secondary.map(s => buildKpiCard(s.label, s.actual, s.target, [
+    { label: 'To target', value: s.actualToTarget }
+  ])).join('');
+  const ratios = summary.ratios.map(r => `<div class="ratio"><span class="rk">${r.label}</span><span class="rv">${r.value||'&mdash;'}</span></div>`).join('');
+  return `
+    <div class="kpis">${kpis}</div>
+    ${secondary ? `<div class="kpis">${secondary}</div>` : ''}
+    ${ratios ? `<div class="ratios" style="margin-bottom:20px">${ratios}</div>` : ''}
+  `;
+}
+
+function render(){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
+  document.querySelectorAll('.viewtoggle span').forEach(v => v.classList.toggle('active', v.dataset.view === currentView));
+  const content = document.getElementById('content');
+  const lastUpdated = document.getElementById('lastUpdated');
+  const statsRow = document.getElementById('statsRow');
+  const controlsRow = document.getElementById('controlsRow');
+
+  if(currentTab === 'tab1'){
+    const parsed = store.tab1;
+    renderStats(parsed);
+    renderControls(parsed);
+    if(!parsed){
+      content.innerHTML = `<div class="empty">No rep data yet.<br><button id="emptyPasteBtn" class="primary">Paste data</button></div>`;
+      const btn = document.getElementById('emptyPasteBtn');
+      if(btn) btn.onclick = openModal;
+      lastUpdated.textContent = 'No data yet';
+      return;
+    }
+    content.innerHTML = currentView === 'cards' ? renderCards(parsed) : renderTable(parsed);
+    lastUpdated.textContent = `${parsed.rows.length} reps loaded`;
+  } else {
+    statsRow.classList.add('hidden');
+    controlsRow.classList.add('hidden');
+    const summary = store.tab2;
+    content.innerHTML = renderTeamOverview(summary);
+    const btn2 = document.getElementById('emptyPasteBtn2');
+    if(btn2) btn2.onclick = openModal;
+    lastUpdated.textContent = summary ? 'Team overview loaded' : 'No data yet';
+  }
+}
+
+function openModal(){
+  document.getElementById('modalTitle').textContent = `Paste data — ${currentTab==='tab1'?'Reps':'Team overview'}`;
+  document.getElementById('pasteArea').value = '';
+  document.getElementById('modalErr').classList.add('hidden');
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.add('hidden'); }
+
+document.getElementById('refreshBtn').onclick = async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  document.getElementById('fetchBanner').innerHTML = '';
+  await tryLiveFetch();
+  btn.classList.remove('spinning');
+  render();
+};
+document.getElementById('cancelBtn').onclick = closeModal;
+document.getElementById('saveBtn').onclick = async () => {
+  const text = document.getElementById('pasteArea').value;
+  const err = document.getElementById('modalErr');
+  try{
+    if(currentTab === 'tab1'){
+      const parsed = applyHiddenColumns(parseRepTable(text));
+      if(!parsed){ err.textContent = 'Could not find a "Rep Name" column. Make sure the header row is included.'; err.classList.remove('hidden'); return; }
+      await saveData('tab1', parsed);
+    } else {
+      const parsed = parseTeamSummary(text);
+      if(!parsed){ err.textContent = 'Could not read that data. Paste the full team overview section including labels.'; err.classList.remove('hidden'); return; }
+      await saveData('tab2', parsed);
+    }
+    closeModal();
+    render();
+  }catch(e){
+    err.textContent = 'Save failed. Please try again.';
+    err.classList.remove('hidden');
+  }
+};
+
+document.querySelectorAll('.tab').forEach(t => { t.onclick = () => { currentTab = t.dataset.tab; render(); }; });
+document.querySelectorAll('.viewtoggle span').forEach(v => { v.onclick = () => { currentView = v.dataset.view; render(); }; });
+document.getElementById('search').oninput = render;
+document.getElementById('sortBy').onchange = render;
+
+(async () => {
+  try{
+    const cached1raw = await storageGetRaw('tab1');
+    if(cached1raw){
+      const parsedCached = JSON.parse(cached1raw);
+      if(parsedCached.headers && parsedCached.headers.some(h => HIDDEN_COLUMNS.map(x=>x.toLowerCase()).includes(h.toLowerCase()))){
+        await saveData('tab1', applyHiddenColumns(parsedCached));
+      }
+    }
+  }catch(e){}
+  await loadCached();
+  render();
+  await tryLiveFetch();
+  render();
+})();
+</script>
+</body>
+</html>
