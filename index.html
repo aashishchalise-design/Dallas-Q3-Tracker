@@ -666,6 +666,12 @@ function filterAndSort(parsed){
     if(isYNCol){
       const diff = ynRank(a[sortBy]) - ynRank(b[sortBy]);
       if(diff !== 0) return diff;
+      const qtrCol = statusCols.find(c => /qtr/i.test(c));
+      const aTier = qtrCol ? statusRank(a[qtrCol]) : 4;
+      const bTier = qtrCol ? statusRank(b[qtrCol]) : 4;
+      const aTierCapped = Math.min(aTier, 4);
+      const bTierCapped = Math.min(bTier, 4);
+      if(aTierCapped !== bTierCapped) return aTierCapped - bTierCapped;
       const aNotNeeded = (sraNeededCol && isAchieved(a[sraNeededCol]||'')) || (icNeededCol && isAchieved(a[icNeededCol]||'')) ? 0 : 1;
       const bNotNeeded = (sraNeededCol && isAchieved(b[sraNeededCol]||'')) || (icNeededCol && isAchieved(b[icNeededCol]||'')) ? 0 : 1;
       if(aNotNeeded !== bNotNeeded) return aNotNeeded - bNotNeeded;
