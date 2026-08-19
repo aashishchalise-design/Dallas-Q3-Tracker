@@ -511,6 +511,16 @@ function statusBadgeClass(val){
 
 const LEVEL1_SRA_STRONG_THRESHOLD = 5;
 
+function hasAnySRA(row, headers){
+  const sraQtrCol = headers.find(h => /^sra qtr$/i.test(h));
+  if(!sraQtrCol) return true;
+  return (parseFloat(row[sraQtrCol]) || 0) > 0;
+}
+
+function getQualifyingRows(parsed){
+  return parsed.rows.filter(r => hasAnySRA(r, parsed.headers));
+}
+
 function countPacingForLevel1(parsed){
   const { statusCols } = classify(parsed.headers);
   const statusCol = statusCols.find(c => /qtr/i.test(c)) || statusCols[0];
@@ -520,7 +530,7 @@ function countPacingForLevel1(parsed){
   if(!clubCol || !sraQtrCol) return null;
 
   let count = 0;
-  parsed.rows.forEach(r => {
+  getQualifyingRows(parsed).forEach(r => {
     const club = (r[clubCol]||'').trim().toUpperCase();
     if(club !== 'Y') return;
     const status = statusCol ? (r[statusCol]||'') : '';
@@ -540,11 +550,12 @@ function renderStats(parsed){
   const statsRow = document.getElementById('statsRow');
   if(!parsed){ statsRow.classList.add('hidden'); return; }
   const { statusCols } = classify(parsed.headers);
-  const total = parsed.rows.length;
+  const qualifyingRows = getQualifyingRows(parsed);
+  const total = qualifyingRows.length;
   const statusCol = statusCols.find(c => /qtr/i.test(c)) || statusCols[0];
   let premier=0, level3=0, level2=0, level1=0;
   if(statusCol){
-    parsed.rows.forEach(r => {
+    qualifyingRows.forEach(r => {
       const v = r[statusCol] || '';
       if(/premier/i.test(v)) premier++;
       else if(/level\s*3/i.test(v)) level3++;
@@ -625,7 +636,7 @@ function filterAndSort(parsed){
   const { nameCol, statusCols } = classify(parsed.headers);
   const search = document.getElementById('search').value.trim().toLowerCase();
   const sortBy = document.getElementById('sortBy').value || nameCol;
-  let rows = parsed.rows.slice();
+  let rows = getQualifyingRows(parsed);
   if(search) rows = rows.filter(r => (r[nameCol]||'').toLowerCase().includes(search));
   const isStatusCol = statusCols.includes(sortBy) && /qtr/i.test(sortBy);
   const isYNCol = /count.*towards.*level.*1/i.test(sortBy);
@@ -655,6 +666,13 @@ function filterAndSort(parsed){
     if(isYNCol){
       const diff = ynRank(a[sortBy]) - ynRank(b[sortBy]);
       if(diff !== 0) return diff;
+      const aNotNeeded = (sraNeededCol && isAchieved(a[sraNeededCol]||'')) || (icNeededCol && isAchieved(a[icNeededCol]||'')) ? 0 : 1;
+      const bNotNeeded = (sraNeededCol && isAchieved(b[sraNeededCol]||'')) || (icNeededCol && isAchieved(b[icNeededCol]||'')) ? 0 : 1;
+      if(aNotNeeded !== bNotNeeded) return aNotNeeded - bNotNeeded;
+      const sraQtrCol = parsed.headers.find(h => /^sra qtr$/i.test(h));
+      const aSra = sraQtrCol ? (parseFloat(a[sraQtrCol]) || 0) : 0;
+      const bSra = sraQtrCol ? (parseFloat(b[sraQtrCol]) || 0) : 0;
+      if(aSra !== bSra) return bSra - aSra;
       return (a[nameCol]||'').localeCompare(b[nameCol]||'');
     }
     const av=a[sortBy]||'', bv=b[sortBy]||'';
