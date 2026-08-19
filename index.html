@@ -632,6 +632,7 @@ function filterAndSort(parsed){
 
   const sraNeededCol = parsed.headers.find(h => /sra needed to hit level 1/i.test(h));
   const icNeededCol = parsed.headers.find(h => /ic needed to hit level 1/i.test(h));
+  const clubColForTiebreak = parsed.headers.find(h => /count.*towards.*level.*1/i.test(h));
   function combinedStatusRank(row){
     const base = statusRank(row[sortBy]);
     if(base <= 3) return base; // Premier/L3/L2/L1 keep their own rank
@@ -645,6 +646,10 @@ function filterAndSort(parsed){
     if(isStatusCol){
       const diff = combinedStatusRank(a) - combinedStatusRank(b);
       if(diff !== 0) return diff;
+      if(clubColForTiebreak){
+        const ynDiff = ynRank(a[clubColForTiebreak]) - ynRank(b[clubColForTiebreak]);
+        if(ynDiff !== 0) return ynDiff;
+      }
       return (a[nameCol]||'').localeCompare(b[nameCol]||'');
     }
     if(isYNCol){
