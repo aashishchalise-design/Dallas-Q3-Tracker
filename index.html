@@ -629,9 +629,21 @@ function filterAndSort(parsed){
   if(search) rows = rows.filter(r => (r[nameCol]||'').toLowerCase().includes(search));
   const isStatusCol = statusCols.includes(sortBy) && /qtr/i.test(sortBy);
   const isYNCol = /count.*towards.*level.*1/i.test(sortBy);
+
+  const sraNeededCol = parsed.headers.find(h => /sra needed to hit level 1/i.test(h));
+  const icNeededCol = parsed.headers.find(h => /ic needed to hit level 1/i.test(h));
+  function combinedStatusRank(row){
+    const base = statusRank(row[sortBy]);
+    if(base <= 3) return base; // Premier/L3/L2/L1 keep their own rank
+    const sraDone = sraNeededCol ? isAchieved(row[sraNeededCol] || '') : false;
+    const icDone = icNeededCol ? isAchieved(row[icNeededCol] || '') : false;
+    if(sraDone || icDone) return 4; // "not needed" reps rank right after the levels
+    return 5; // everyone else
+  }
+
   rows.sort((a,b) => {
     if(isStatusCol){
-      const diff = statusRank(a[sortBy]) - statusRank(b[sortBy]);
+      const diff = combinedStatusRank(a) - combinedStatusRank(b);
       if(diff !== 0) return diff;
       return (a[nameCol]||'').localeCompare(b[nameCol]||'');
     }
