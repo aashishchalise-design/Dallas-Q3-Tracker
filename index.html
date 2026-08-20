@@ -829,8 +829,14 @@ document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
   document.getElementById('fetchBanner').innerHTML = '';
-  await tryLiveFetch();
-  btn.classList.remove('spinning');
+  try{
+    await tryLiveFetch();
+  }catch(e){
+    console.error('Unexpected refresh error:', e);
+    document.getElementById('fetchBanner').innerHTML = '<div class="banner banner-warn">Unexpected error during refresh: ' + e.message + '</div>';
+  }finally{
+    btn.classList.remove('spinning');
+  }
   render();
 };
 document.getElementById('cancelBtn').onclick = closeModal;
