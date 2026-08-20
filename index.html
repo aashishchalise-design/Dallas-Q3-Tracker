@@ -203,7 +203,7 @@ function loadViaJsonp(url, timeoutMs){
       reject(new Error('JSONP script load failed'));
     };
     const sep = url.includes('?') ? '&' : '?';
-    script.src = url + sep + 'callback=' + cbName;
+    script.src = url + sep + 'callback=' + cbName + '&_ts=' + Date.now();
     document.body.appendChild(script);
     setTimeout(() => {
       if(done) return;
@@ -394,7 +394,6 @@ async function tryLiveFetch(){
   const banner = document.getElementById('fetchBanner');
   let jsonpError = null;
 
-  // Primary method: Apps Script JSONP (bypasses CORS entirely)
   try{
     const data = await loadViaJsonp(APPS_SCRIPT_URL, 20000);
     if(data && data.tab1 && data.tab2){
@@ -419,38 +418,8 @@ async function tryLiveFetch(){
     jsonpError = 'Apps Script request failed: ' + e.message;
   }
   console.warn('Live fetch (Apps Script) issue:', jsonpError);
-
-  // Fallback method: published CSV (works only if hosted with permissive CORS)
-  let anyOk = false, anyFail = false;
-  try{
-    const res1 = await fetch(TAB1_URL);
-    if(res1.ok){
-      const text1 = await res1.text();
-      const parsed1 = applyHiddenColumns(parseRepTable(text1));
-      if(parsed1){ await saveData('tab1', parsed1); fetchStatus.tab1 = 'ok'; anyOk = true; }
-      else { fetchStatus.tab1 = 'empty'; anyFail = true; }
-    } else { fetchStatus.tab1 = 'fail'; anyFail = true; }
-  }catch(e){ fetchStatus.tab1 = 'fail'; anyFail = true; }
-  try{
-    const res2 = await fetch(TAB2_URL);
-    if(res2.ok){
-      const text2 = await res2.text();
-      const parsed2 = parseTeamSummary(text2);
-      if(parsed2){ await saveData('tab2', parsed2); fetchStatus.tab2 = 'ok'; anyOk = true; }
-      else { fetchStatus.tab2 = 'empty'; anyFail = true; }
-    } else { fetchStatus.tab2 = 'fail'; anyFail = true; }
-  }catch(e){ fetchStatus.tab2 = 'fail'; anyFail = true; }
-
-  if(anyOk && !anyFail){
-    banner.innerHTML = '';
-    document.getElementById('statusDot').style.background = 'var(--green)';
-  } else if(anyOk && anyFail){
-    banner.innerHTML = '<div class="banner banner-warn">Some data loaded live, some did not — showing last saved data where needed. Use Paste data to update manually.</div>';
-    document.getElementById('statusDot').style.background = 'var(--gold)';
-  } else {
-    banner.innerHTML = '<div class="banner banner-warn">Live fetch didn\'t work this time: ' + (jsonpError || 'unknown error') + ' — showing last saved data.</div>';
-    document.getElementById('statusDot').style.background = 'var(--gold)';
-  }
+  banner.innerHTML = '<div class="banner banner-warn">Live fetch didn\'t work this time: ' + jsonpError + ' — showing last saved data. Click refresh to try again.</div>';
+  document.getElementById('statusDot').style.background = 'var(--gold)';
 }
 
 async function loadCached(){
@@ -771,8 +740,7 @@ function buildKpiCard(label, actual, target, meta){
 function renderTeamOverview(summary){
   if(!summary) return `<div class="empty">No team overview data yet.<br><button id="emptyPasteBtn2" class="primary">Paste data</button></div>`;
   const kpis = summary.metrics.map(m => buildKpiCard(m.label, m.actual, m.target, [
-    { label: 'To target', value: m.actualToTarget },
-    { label: 'Pacing', value: m.pacing }
+    { label: 'To target', value: m.actualToTarget }
   ])).join('');
   const secondary = summary.secondary.map(s => buildKpiCard(s.label, s.actual, s.target, [
     { label: 'To target', value: s.actualToTarget }
@@ -827,7 +795,9 @@ function closeModal(){ document.getElementById('modalOverlay').classList.add('hi
 
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
+  if(btn.classList.contains('spinning')) return; // already in progress, ignore extra clicks
   btn.classList.add('spinning');
+  btn.disabled = true;
   document.getElementById('fetchBanner').innerHTML = '';
   try{
     await tryLiveFetch();
@@ -836,6 +806,7 @@ document.getElementById('refreshBtn').onclick = async () => {
     document.getElementById('fetchBanner').innerHTML = '<div class="banner banner-warn">Unexpected error during refresh: ' + e.message + '</div>';
   }finally{
     btn.classList.remove('spinning');
+    btn.disabled = false;
   }
   render();
 };
@@ -878,7 +849,15 @@ document.getElementById('sortBy').onchange = render;
   }catch(e){}
   await loadCached();
   render();
-  await tryLiveFetch();
+  const initBtn = document.getElementById('refreshBtn');
+  initBtn.classList.add('spinning');
+  initBtn.disabled = true;
+  try{
+    await tryLiveFetch();
+  }finally{
+    initBtn.classList.remove('spinning');
+    initBtn.disabled = false;
+  }
   render();
 })();
 </script>
