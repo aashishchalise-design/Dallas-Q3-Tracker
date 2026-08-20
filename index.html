@@ -395,7 +395,7 @@ async function tryLiveFetch(){
   let jsonpError = null;
 
   try{
-    const data = await loadViaJsonp(APPS_SCRIPT_URL, 20000);
+    const data = await loadViaJsonp(APPS_SCRIPT_URL, 45000);
     if(data && data.tab1 && data.tab2){
       const tab1Text = sheetRowsToTSV(data.tab1);
       const tab2Text = sheetRowsToTSV(data.tab2);
